@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	
+	<string name="app_name">Sliding Panel Example</string>
+	
+	<string name="content">Content</string>
+	<string name="handle">Handle</string>
+	<string name="popup">Popup</string>
+	
+</resources>
