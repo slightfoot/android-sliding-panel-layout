@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:clickable="true"
+	android:orientation="vertical"
+	>
+	<FrameLayout
+		android:id="@+id/handle"
+		android:layout_width="match_parent"
+		android:layout_height="70dp"
+		android:foreground="@drawable/shadow_above"
+		android:foregroundGravity="top|fill_horizontal"
+		>
+		<TextView
+			android:layout_width="match_parent"
+			android:layout_height="64dp"
+			android:layout_gravity="bottom"
+			android:background="#CC0000"
+			android:textAppearance="?android:attr/textAppearanceMediumInverse"
+			android:text="@string/handle"
+			android:gravity="center"
+			/>
+	</FrameLayout>
+	<TextView
+		android:id="@+id/popup"
+		android:layout_width="match_parent"
+		android:layout_height="0dp"
+		android:layout_weight="1"
+		android:background="#00CC00"
+		android:textAppearance="?android:attr/textAppearanceMediumInverse"
+		android:text="@string/popup"
+		android:gravity="center"
+		/>
+</LinearLayout>

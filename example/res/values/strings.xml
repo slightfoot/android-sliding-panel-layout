@@ -2,6 +2,7 @@
 <resources>
 	
 	<string name="app_name">Sliding Panel Example</string>
+	<string name="most_recent_tracks">Most Recent Tracks</string>
 	
 	<string name="content">Content</string>
 	<string name="handle">Handle</string>
