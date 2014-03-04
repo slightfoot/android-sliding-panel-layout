@@ -5,8 +5,10 @@ import com.demondevelopers.slidingpanelexample.frags.MostRecentFragment.Progress
 import com.demondevelopers.slidingpanelexample.model.Track;
 import com.squareup.picasso.Picasso;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.drawable.ClipDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -33,7 +35,7 @@ public class TrackView extends FrameLayout
 	private TextView  mTitle;
 	private TextView  mGenre;
 	
-	private ClipDrawable mProgress;
+	private ObjectAnimator mProgress;
 	
 	
 	public TrackView(Context context)
@@ -68,15 +70,16 @@ public class TrackView extends FrameLayout
 		mUser     = (TextView)findViewById(R.id.track_user);
 		mTitle    = (TextView)findViewById(R.id.track_title);
 		mGenre    = (TextView)findViewById(R.id.track_genre);
+		
+		mProgress = ObjectAnimator.ofInt(mWaveform.getBackground(), "level", 0);
 	}
 	
 	@Override
 	public void updateProgress(float progress)
 	{
-		//Log.w(TAG, "updateProgress: " + progress);
-		if(mProgress != null){
-			mWaveform.getBackground().setLevel((int)(10000 * progress));
-		}
+		mProgress.setDuration(1050);
+		mProgress.setIntValues((int)(10000 * progress));
+		mProgress.start();
 	}
 	
 	public void setTrack(Track track)

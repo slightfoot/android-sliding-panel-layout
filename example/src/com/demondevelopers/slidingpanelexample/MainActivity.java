@@ -105,10 +105,10 @@ public class MainActivity extends FragmentActivity
 			MediaPlayer mp = mMediaPlayer;
 			if(mp != null && mp.isPlaying()){
 				int duration = mp.getDuration();
-				if(duration > -1){
-					float progress = (float)mp.getCurrentPosition() / (float)duration;
-					Log.d(TAG, "progress: " + progress);
-					mProgressUpdate.onProgressUpdate(mTrack, progress);
+				int pos = mp.getCurrentPosition();
+				if(duration > -1 && pos > -1){
+					mProgressUpdate.onProgressUpdate(mTrack, 
+						(float)pos / (float)duration);
 				}
 				mHandler.postDelayed(mUpdateProgressRunnable, 1000);
 			}
