@@ -1,7 +1,5 @@
 package com.demondevelopers.slidingpanelexample.frags;
 
-import java.util.HashMap;
-
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
@@ -16,7 +14,6 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 
 import com.demondevelopers.slidingpanelexample.R;
-import com.demondevelopers.slidingpanelexample.MainActivity.OnProgressUpdate;
 import com.demondevelopers.slidingpanelexample.model.Track;
 import com.demondevelopers.slidingpanelexample.model.Tracks;
 import com.demondevelopers.slidingpanelexample.util.RemoteJsonLoader;
@@ -24,7 +21,7 @@ import com.demondevelopers.slidingpanelexample.widget.TrackView;
 
 
 public class MostRecentFragment extends BaseFragment 
-	implements LoaderCallbacks<Tracks>, OnProgressUpdate
+	implements LoaderCallbacks<Tracks>
 {
 	private static final String TAG = MostRecentFragment.class.getSimpleName();
 	
@@ -34,8 +31,6 @@ public class MostRecentFragment extends BaseFragment
 	
 	private ListView mListView;
 	private TracksAdapter mAdapter;
-	
-	private HashMap<String, ProgressListener> mUpdateListeners = new HashMap<String, ProgressListener>();
 	
 	
 	@Override
@@ -84,28 +79,6 @@ public class MostRecentFragment extends BaseFragment
 				}
 			}
 		});
-		mListView.setRecyclerListener(new ListView.RecyclerListener()
-		{
-			@Override
-			public void onMovedToScrapHeap(View view)
-			{
-				if(view instanceof TrackView){
-					Track track = ((TrackView)view).getTrack();
-					if(track != null){
-						mUpdateListeners.remove(track.getId());
-					}
-				}
-			}
-		});
-	}
-	
-	@Override
-	public void onProgressUpdate(Track track, float progress)
-	{
-		ProgressListener listener = mUpdateListeners.get(track.getId());
-		if(listener != null){
-			listener.updateProgress(progress);
-		}
 	}
 	
 	@Override
@@ -135,10 +108,6 @@ public class MostRecentFragment extends BaseFragment
 		public void onTrackSelected(Track track);
 	}
 	
-	public static interface ProgressListener
-	{
-		public void updateProgress(float progress);
-	}
 	
 	private class TracksAdapter extends BaseAdapter
 	{
@@ -167,7 +136,6 @@ public class MostRecentFragment extends BaseFragment
 			Track track = mTracks.get(position);
 			TrackView trackView = (TrackView)convertView;
 			trackView.setTrack(track);
-			mUpdateListeners.put(track.getId(), trackView);
 			return convertView;
 		}
 		
@@ -187,6 +155,12 @@ public class MostRecentFragment extends BaseFragment
 		public int getCount()
 		{
 			return (mTracks != null) ? mTracks.size() : 0;
+		}
+		
+		@Override
+		public boolean hasStableIds()
+		{
+			return true;
 		}
 	}
 }

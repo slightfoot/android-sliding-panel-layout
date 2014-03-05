@@ -1,116 +1,93 @@
 package com.demondevelopers.slidingpanelexample;
 
-import java.io.IOException;
-
 import com.demondevelopers.slidingpanelexample.frags.MostRecentFragment;
 import com.demondevelopers.slidingpanelexample.frags.MostRecentFragment.OnTrackSelected;
 import com.demondevelopers.slidingpanelexample.model.Track;
 import com.demondeveloprs.slidingpanellayout.SlideUpPanelLayout;
 
-import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.net.Uri;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 
 
 public class MainActivity extends FragmentActivity
 	implements OnTrackSelected
 {
-	private Handler mHandler = new Handler(Looper.getMainLooper());
-	
 	private static final String TAG = MainActivity.class.getSimpleName();
+	private static final String EXTRA_TRACK = "extraTrack";
 	
 	private SlideUpPanelLayout mPanelLayout;
 	
-	private OnProgressUpdate mProgressUpdate;
-	private MediaPlayer mMediaPlayer;
-	private Track mTrack;
+	private AudioPlayer mAudioPlayer;
+	private Track       mTrack;
 	
+	
+	public static Intent createIntent(Context context, Track track)
+	{
+		return new Intent(context, MainActivity.class)
+			.putExtra(EXTRA_TRACK, track);
+	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		
 		setTitle(R.string.most_recent_tracks);
 		setContentView(R.layout.activity_main);
 		
+		mAudioPlayer = ExampleApp.from(this).getAudioPlayer();
 		mPanelLayout = (SlideUpPanelLayout)findViewById(R.id.slide_layout);
 		
-		/*findViewById(R.id.content_frame).setOnClickListener(new View.OnClickListener()
-		{
-			@Override
-			public void onClick(View v)
-			{
-				if(layout.getPanelState() == SlideUpPanelLayout.PanelState.HIDDEN){
-					layout.showHandle();
-				}
-				else{
-					layout.hideHandle();
-				}
-			}
-		});*/
-		mPanelLayout.showHandle();
-		
 		if(savedInstanceState == null){
-			MostRecentFragment mostRecent = new MostRecentFragment();
-			mProgressUpdate = mostRecent;
 			getSupportFragmentManager().beginTransaction()
-				.add(R.id.content_frame, mostRecent)
+				.add(R.id.content_frame, new MostRecentFragment())
 				.commit();
+			if(getIntent().hasExtra(EXTRA_TRACK)){
+				mTrack = (Track)getIntent().getSerializableExtra(EXTRA_TRACK);
+			}
 		}
 		else{
-			mProgressUpdate = (OnProgressUpdate)getSupportFragmentManager()
-				.findFragmentById(R.id.content_frame);
+			mTrack = (Track)savedInstanceState.getSerializable(EXTRA_TRACK);
 		}
+		if(mTrack != null){
+			mPanelLayout.showHandle();
+		}
+	}
+	
+	@Override
+	protected void onSaveInstanceState(Bundle outState)
+	{
+		super.onSaveInstanceState(outState);
+		outState.putSerializable(EXTRA_TRACK, mTrack);
 	}
 	
 	@Override
 	public void onTrackSelected(Track track)
 	{
-		mTrack = track;
-		
 		mPanelLayout.showHandle();
-		
-		mHandler.removeCallbacks(mUpdateProgressRunnable);
-		
-		if(mMediaPlayer != null){
-			mMediaPlayer.stop();
-			mMediaPlayer.reset();
-		}else{
-			mMediaPlayer = new MediaPlayer();
-			mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-		}
-		try{
-			mMediaPlayer.setDataSource(this, Uri.parse(track.getStreamUrl() + 
-				"?client_id=54647ab8dc2cd5e57c6163c7fb6e683d"));
-			mMediaPlayer.prepare();
-			mMediaPlayer.start();
-		}
-		catch(IOException e){
-			Log.e(TAG, "onTrackSelected", e);
-		}
-		
-		mHandler.post(mUpdateProgressRunnable);
+		mTrack = track;
+		mAudioPlayer.play(this, track.getStreamUrl() + 
+			"?client_id=54647ab8dc2cd5e57c6163c7fb6e683d");
 	}
 	
-	private Runnable mUpdateProgressRunnable = new Runnable()
+	@Override
+	protected void onStart()
 	{
-		@Override
-		public void run()
+		super.onStart();
+		if(mAudioPlayer.isPlaying()){
+			stopService(AudioService.createStopIntent(this));
+		}
+		mAudioPlayer.registerObserver(mAudioObserver);
+	}
+	
+	private AudioPlayer.AudioObserver mAudioObserver = new AudioPlayer.SimpleAudioObserver()
+	{
+		public void onAudioPlayerProgress(AudioPlayer player, int progress, int duration)
 		{
-			MediaPlayer mp = mMediaPlayer;
-			if(mp != null && mp.isPlaying()){
-				int duration = mp.getDuration();
-				int pos = mp.getCurrentPosition();
-				if(duration > -1 && pos > -1){
-					mProgressUpdate.onProgressUpdate(mTrack, 
-						(float)pos / (float)duration);
-				}
-				mHandler.postDelayed(mUpdateProgressRunnable, 1000);
+			if(mTrack != null && progress != 0 && duration != 0){
+				mTrack.getTrackState().update(progress, duration);
 			}
 		}
 	};
@@ -119,17 +96,9 @@ public class MainActivity extends FragmentActivity
 	protected void onStop()
 	{
 		super.onStop();
-		mHandler.removeCallbacks(mUpdateProgressRunnable);
-		if(mMediaPlayer != null){
-			mMediaPlayer.stop();
-			mMediaPlayer.release();
-			mMediaPlayer = null;
+		mAudioPlayer.unregisterObserver(mAudioObserver);
+		if(mAudioPlayer.isPlaying()){
+			startService(AudioService.createStartIntent(this, mTrack));
 		}
-	}
-	
-	
-	public static interface OnProgressUpdate
-	{
-		public void onProgressUpdate(Track track, float progress);
 	}
 }

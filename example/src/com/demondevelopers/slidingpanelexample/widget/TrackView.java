@@ -1,28 +1,28 @@
 package com.demondevelopers.slidingpanelexample.widget;
 
 import com.demondevelopers.slidingpanelexample.R;
-import com.demondevelopers.slidingpanelexample.frags.MostRecentFragment.ProgressListener;
 import com.demondevelopers.slidingpanelexample.model.Track;
+import com.demondevelopers.slidingpanelexample.model.TrackState;
+import com.demondevelopers.slidingpanelexample.model.TrackState.TrackStateChanged;
 import com.squareup.picasso.Picasso;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.graphics.drawable.ClipDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
+import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 
 public class TrackView extends FrameLayout
-	implements ProgressListener
+	implements TrackStateChanged
 {
 	private static final String TAG = TrackView.class.getSimpleName();
 	
@@ -35,7 +35,8 @@ public class TrackView extends FrameLayout
 	private TextView  mTitle;
 	private TextView  mGenre;
 	
-	private ObjectAnimator mProgress;
+	private Drawable       mProgressWaveform;
+	private ObjectAnimator mProgressAnimator;
 	
 	
 	public TrackView(Context context)
@@ -71,35 +72,59 @@ public class TrackView extends FrameLayout
 		mTitle    = (TextView)findViewById(R.id.track_title);
 		mGenre    = (TextView)findViewById(R.id.track_genre);
 		
-		mProgress = ObjectAnimator.ofInt(mWaveform.getBackground(), "level", 0);
-	}
-	
-	@Override
-	public void updateProgress(float progress)
-	{
-		mProgress.setDuration(1050);
-		mProgress.setIntValues((int)(10000 * progress));
-		mProgress.start();
+		mProgressWaveform = mWaveform.getBackground();
+		mProgressAnimator = ObjectAnimator.ofInt(mProgressWaveform, "level", 0);
+		mProgressAnimator.setInterpolator(new LinearInterpolator());
+		mProgressAnimator.setDuration(1000);
 	}
 	
 	public void setTrack(Track track)
 	{
-		setImageViewUrl(mWaveform, track.getWaveformUrl());
-		String artwork = track.getArtworkUrl();
-		if(TextUtils.isEmpty(artwork)){
-			artwork = track.getUser().getAvatarUrl();
+		if(mTrack != null){
+			mTrack.getTrackState().unregisterObserver(this);
+			mProgressAnimator.cancel();
+			mProgressWaveform.setLevel(0);
 		}
-		setImageViewUrl(mArtwork,  artwork);
-		setTextViewText(mUser,     track.getUser().getUsername());
-		setTextViewText(mTitle,    track.getTitle());
-		setTextViewText(mGenre,    track.getGenre());
-		
-		mTrack = track;
+		if(track != null){
+			setImageViewUrl(mWaveform, track.getWaveformUrl());
+			String artwork = track.getArtworkUrl();
+			if(TextUtils.isEmpty(artwork)){
+				artwork = track.getUser().getAvatarUrl();
+			}
+			setImageViewUrl(mArtwork,  artwork);
+			setTextViewText(mUser,     track.getUser().getUsername());
+			setTextViewText(mTitle,    track.getTitle());
+			setTextViewText(mGenre,    track.getGenre());
+			
+			TrackState state = track.getTrackState();
+			updateProgress(false, state.getProgress(), state.getTotal());
+			state.registerObserver(this);
+			mTrack = track;
+		}
 	}
 	
 	public Track getTrack()
 	{
 		return mTrack;
+	}
+	
+	@Override
+	public void onTrackStateChange(TrackState state)
+	{
+		updateProgress(true, state.getProgress(), state.getTotal());
+	}
+	
+	private void updateProgress(boolean animate, int progress, int total)
+	{
+		float value = (10000.0f / total);
+		if(animate){
+			mProgressAnimator.setIntValues((int)(value * (progress + 1000)));
+			mProgressAnimator.start();
+		}
+		else{
+			mProgressAnimator.cancel();
+			mProgressWaveform.setLevel((int)(value * progress));
+		}
 	}
 	
 	private void setTextViewText(TextView tv, CharSequence text)

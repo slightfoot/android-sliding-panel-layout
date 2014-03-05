@@ -21,6 +21,8 @@ public class Track implements Serializable
 	private String  mStream_url;
 	private User    mUser;
 	
+	private transient TrackState mTrackState = new TrackState();
+	
 	
 	public String getId()
 	{
@@ -85,5 +87,13 @@ public class Track implements Serializable
 	public User getUser()
 	{
 		return mUser;
+	}
+	
+	public TrackState getTrackState()
+	{
+		if(mTrackState == null){
+			mTrackState = new TrackState();
+		}
+		return mTrackState;
 	}
 }
